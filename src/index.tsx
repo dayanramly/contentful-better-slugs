@@ -64,6 +64,11 @@ const BetterSlugs = ({ sdk }: BetterSlugsProps) => {
   const [value, setValue] = useState('');
   const fields: string[] = [];
 
+  const globalLocale = sdk.field.locale;
+
+  const slugExisting = sdk.entry.fields['slug'].getValue(globalLocale);
+  const titleExisting = sdk.entry.fields['title'].getValue(globalLocale);
+
   useEffect(() => {
     sdk.window.startAutoResizer();
 
@@ -81,8 +86,19 @@ const BetterSlugs = ({ sdk }: BetterSlugsProps) => {
       if (Object.prototype.hasOwnProperty.call(sdk.entry.fields, fieldName)) {
         const locales = sdk.entry.fields[fieldName].locales;
 
-        locales.forEach((locale: string) => {
-          sdk.entry.fields[fieldName].onValueChanged(locale, () => {
+        locales.forEach((locale: string) => {''
+          const titleExist = sdk.entry.fields['title'].getValue(globalLocale);
+          if (!titleExist){
+            sdk.entry.fields['title'].onValueChanged(locale, () => {
+              if (debounceInterval.current) {
+                clearInterval(debounceInterval.current);
+              }
+              debounceInterval.current = setTimeout(() => {
+                updateSlug(locale);
+              }, 500);
+            });
+          }
+          sdk.entry.fields['vertical'].onValueChanged(locale, () => {
             if (debounceInterval.current) {
               clearInterval(debounceInterval.current);
             }
@@ -93,7 +109,7 @@ const BetterSlugs = ({ sdk }: BetterSlugsProps) => {
         });
       }
     });
-
+    
     // Handler for external field value changes (e.g. when multiple authors are working on the same entry).
     if (sdk.field) {
       detachExternalChangeHandler.current = sdk.field.onValueChanged(onExternalChange);
@@ -200,6 +216,7 @@ const BetterSlugs = ({ sdk }: BetterSlugsProps) => {
     const defaultLocale = sdk.locales.default;
     const slugParts: string[] = [];
 
+
     for (const part of parts) {
       if (part.startsWith('field:')) {
         const fieldParts = part.split(':');
@@ -236,9 +253,18 @@ const BetterSlugs = ({ sdk }: BetterSlugsProps) => {
         slugParts.push(part);
       }
     }
+    
+    let splitSlug = []
+    if (slugExisting && titleExisting) {
+      splitSlug = slugExisting.split("/");
+      const oldSlug = splitSlug[2];
+      slugParts.splice(2,1,oldSlug)
+    }
+
+    const slugJoin = slugParts.join('/').replace('//', '/').replace(/\/$/, '');
 
     sdk.entry.fields[sdk.field.id].setValue(
-      slugParts.join('/').replace('//', '/').replace(/\/$/, ''),
+      slugJoin,
       locale
     );
   };

@@ -257,7 +257,7 @@ const BetterSlugs = ({ sdk }: BetterSlugsProps) => {
     let splitSlug = []
     if (slugExisting && titleExisting) {
       splitSlug = slugExisting.split("/");
-      const oldSlug = splitSlug[2];
+      const oldSlug = splitSlug.length>1 ? splitSlug[2] : splitSlug[0];
       slugParts.splice(2,1,oldSlug)
     }
 
